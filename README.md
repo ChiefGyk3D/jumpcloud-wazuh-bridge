@@ -153,10 +153,43 @@ jumpcloud_wazuh_bridge/
   poller.py   — Polling loop and cursor management
   writer.py   — JSONL output with jumpcloud_bridge envelope
   main.py     — CLI entrypoint (--once or continuous)
-Dockerfile        — Production container image
-docker-compose.yml — Ready-to-use compose service
-tests/            — Unit tests
+dashboards/
+  jumpcloud_security.json — Grafana dashboard (14 panels, datasource template var)
+scripts/
+  deploy-dashboard.py     — Deploy dashboard to Grafana via API
+Dockerfile                — Production container image (hardened, non-root)
+docker-compose.yml        — Ready-to-use compose service
+tests/                    — Unit tests
 ```
+
+## Grafana Dashboard
+
+A dedicated **JumpCloud IdP Security** dashboard is included with 14 panels:
+
+- Auth failures/success timelines and stats
+- Brute-force alerts, policy changes, MFA events
+- Events by service (pie chart) and event type (bar chart)
+- SSO application usage
+- Auth failures by source IP
+- User lifecycle timeline
+- Recent events table with field renaming
+
+### Import Dashboard
+
+```bash
+# Via deploy script
+GRAFANA_URL="http://localhost:3000" \
+GRAFANA_USER="admin" \
+GRAFANA_PASS="changeme" \
+python3 scripts/deploy-dashboard.py
+
+# Or import manually: Grafana → Dashboards → New → Import → Upload JSON
+# File: dashboards/jumpcloud_security.json
+```
+
+The dashboard uses a `${ds}` datasource template variable — select your OpenSearch/Wazuh datasource from the dropdown after import.
+
+A summary view of JumpCloud events is also included in the **SIEM+ Overview** dashboard in the [siem-docker-stack](https://github.com/ChiefGyk3D/siem-docker-stack) repo.
 
 ## License
 
