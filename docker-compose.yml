@@ -1,0 +1,43 @@
+# Add this service to your SIEM docker-compose.yml or use as a standalone file.
+#
+# Three ways to provide the JumpCloud API key:
+#
+#   1. Doppler service token (recommended):
+#      Set DOPPLER_TOKEN to a service token scoped to siem-pfsense/prd.
+#      No Doppler CLI or login needed on the SIEM server.
+#
+#   2. Environment variable:
+#      Set JUMPCLOUD_API_KEY directly.
+#
+#   3. .env file:
+#      Create a .env file next to this compose file.
+#
+# The JSONL output volume should be shared with the Wazuh manager container
+# so Wazuh can read the events via <localfile>.
+
+services:
+  jumpcloud-bridge:
+    build: .
+    container_name: jumpcloud-bridge
+    restart: unless-stopped
+    environment:
+      # --- Option 1: Doppler service token (recommended) ---
+      # DOPPLER_TOKEN: dp.st.xxxx
+      #
+      # --- Option 2: Direct env vars ---
+      # JUMPCLOUD_API_KEY: your-read-only-api-key
+      # JUMPCLOUD_ORG_ID:                    # multi-tenant only
+      JUMPCLOUD_POLL_SECONDS: "300"
+      JUMPCLOUD_SERVICES: "all"
+      JUMPCLOUD_OUTPUT_FILE: /data/jumpcloud-events.jsonl
+      JUMPCLOUD_STATE_FILE: /data/cursor.json
+    volumes:
+      - jumpcloud-data:/data
+      # Share the JSONL output with Wazuh manager:
+      # - wazuh-logs:/data  # if Wazuh reads from a shared volume
+    # If running alongside the SIEM stack, connect to the same network:
+    # networks:
+    #   - siem
+
+volumes:
+  jumpcloud-data:

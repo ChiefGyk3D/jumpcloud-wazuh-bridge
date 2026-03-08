@@ -1,15 +1,43 @@
 from dataclasses import dataclass
 import json
+import logging
 import os
 import subprocess
 
+import requests as _requests
+
+log = logging.getLogger(__name__)
+
 
 def _doppler_secrets() -> dict[str, str]:
-    """Attempt to load secrets from Doppler CLI.
+    """Load secrets from Doppler.
 
-    Returns an empty dict when Doppler is not installed or not configured,
-    allowing a graceful fallback to environment variables.
+    Resolution order:
+      1. DOPPLER_TOKEN env var → Doppler HTTP API (no CLI needed)
+      2. Doppler CLI (if installed and logged in, or DOPPLER_TOKEN is set)
+      3. Empty dict → fall back to plain environment variables
+
+    On the SIEM server, set DOPPLER_TOKEN to a service token scoped to
+    siem-pfsense/prd.  No `doppler login` or CLI install required.
     """
+    # --- Method 1: direct HTTP with a service token (no CLI needed) ---
+    token = os.environ.get("DOPPLER_TOKEN", "")
+    if token:
+        try:
+            resp = _requests.get(
+                "https://api.doppler.com/v3/configs/config/secrets/download",
+                params={"format": "json"},
+                auth=(token, ""),
+                timeout=10,
+            )
+            if resp.status_code == 200:
+                log.info("Secrets loaded from Doppler API (service token)")
+                return resp.json()
+            log.warning("Doppler API returned %d", resp.status_code)
+        except Exception as exc:
+            log.warning("Doppler API call failed: %s", exc)
+
+    # --- Method 2: Doppler CLI (dev workstations with `doppler login`) ---
     try:
         result = subprocess.run(
             ["doppler", "secrets", "download", "--no-file", "--format", "json"],
@@ -18,9 +46,11 @@ def _doppler_secrets() -> dict[str, str]:
             timeout=10,
         )
         if result.returncode == 0:
+            log.info("Secrets loaded from Doppler CLI")
             return json.loads(result.stdout)
     except (FileNotFoundError, subprocess.TimeoutExpired, json.JSONDecodeError):
         pass
+
     return {}
 
 
