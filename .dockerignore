@@ -1,0 +1,40 @@
+# Git and version control
+.git/
+.gitignore
+.github/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing (not needed in container)
+tests/
+
+# Documentation
+*.md
+LICENSE
+
+# Environment / secrets
+.env
+.env.*
+
+# Docker meta
+Dockerfile
+docker-compose.yml
+.dockerignore
