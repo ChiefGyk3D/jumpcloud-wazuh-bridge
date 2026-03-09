@@ -176,10 +176,26 @@
               "id": "1"
             }
           ],
-          "bucketAggs": [],
+          "bucketAggs": [
+            {
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "id": "2",
+              "settings": {
+                "interval": "1M"
+              }
+            }
+          ],
           "timeField": "@timestamp"
         }
       ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["sum"],
+          "fields": "",
+          "values": false
+        }
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -228,10 +244,26 @@
               "id": "1"
             }
           ],
-          "bucketAggs": [],
+          "bucketAggs": [
+            {
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "id": "2",
+              "settings": {
+                "interval": "1M"
+              }
+            }
+          ],
           "timeField": "@timestamp"
         }
       ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["sum"],
+          "fields": "",
+          "values": false
+        }
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -264,10 +296,26 @@
               "id": "1"
             }
           ],
-          "bucketAggs": [],
+          "bucketAggs": [
+            {
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "id": "2",
+              "settings": {
+                "interval": "1M"
+              }
+            }
+          ],
           "timeField": "@timestamp"
         }
       ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["sum"],
+          "fields": "",
+          "values": false
+        }
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -300,10 +348,26 @@
               "id": "1"
             }
           ],
-          "bucketAggs": [],
+          "bucketAggs": [
+            {
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "id": "2",
+              "settings": {
+                "interval": "1M"
+              }
+            }
+          ],
           "timeField": "@timestamp"
         }
       ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["sum"],
+          "fields": "",
+          "values": false
+        }
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -348,10 +412,26 @@
               "id": "1"
             }
           ],
-          "bucketAggs": [],
+          "bucketAggs": [
+            {
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "id": "2",
+              "settings": {
+                "interval": "1M"
+              }
+            }
+          ],
           "timeField": "@timestamp"
         }
       ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["sum"],
+          "fields": "",
+          "values": false
+        }
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -384,10 +464,26 @@
               "id": "1"
             }
           ],
-          "bucketAggs": [],
+          "bucketAggs": [
+            {
+              "type": "date_histogram",
+              "field": "@timestamp",
+              "id": "2",
+              "settings": {
+                "interval": "1M"
+              }
+            }
+          ],
           "timeField": "@timestamp"
         }
       ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["sum"],
+          "fields": "",
+          "values": false
+        }
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -399,7 +495,7 @@
     },
     {
       "id": 9,
-      "title": "Events by Service",
+      "title": "Events by Rule",
       "type": "piechart",
       "gridPos": {
         "h": 8,
@@ -423,7 +519,7 @@
           "bucketAggs": [
             {
               "type": "terms",
-              "field": "data.jumpcloud_bridge.service",
+              "field": "rule.description",
               "id": "2",
               "settings": {
                 "size": "10",
@@ -438,8 +534,10 @@
       "options": {
         "legend": {
           "displayMode": "table",
-          "placement": "right"
-        }
+          "placement": "right",
+          "values": ["value"]
+        },
+        "pieType": "donut"
       }
     },
     {
