@@ -34,7 +34,7 @@ jobs:
 
     - name: Run tests with coverage
       run: |
-        pytest tests/ -v --cov=jumpcloud_wazuh_bridge --cov-report=xml --cov-report=term
+        PYTHONPATH=. pytest tests/ -v --cov=jumpcloud_wazuh_bridge --cov-report=xml --cov-report=term
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
@@ -82,7 +82,7 @@ jobs:
       continue-on-error: true
 
     - name: Upload Bandit report
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: bandit-security-report
