@@ -1,0 +1,8 @@
+<!-- JumpCloud Bridge Decoder -->
+<!-- Copy to /var/ossec/etc/decoders/local_decoder.xml on the Wazuh manager -->
+<!-- Note: With log_format=json, the built-in 'json' decoder handles parsing.
+     This supplementary decoder matches on the jumpcloud_bridge prematch. -->
+<decoder name="jumpcloud_bridge">
+  <prematch>jumpcloud_bridge</prematch>
+  <plugin_decoder>JSON_Decoder</plugin_decoder>
+</decoder>
