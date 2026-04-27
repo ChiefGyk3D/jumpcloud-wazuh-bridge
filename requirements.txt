@@ -1,4 +1,4 @@
 requests>=2.32.0
-python-dateutil>=2.9.0
+python-dateutil>=2.9.0.post0
 # Optional — install for Doppler secrets management
 doppler-sdk==1.3.0
