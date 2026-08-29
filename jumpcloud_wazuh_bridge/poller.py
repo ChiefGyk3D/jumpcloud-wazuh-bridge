@@ -15,6 +15,10 @@ log = logging.getLogger(__name__)
 # now - LAG_BUFFER_SECONDS to avoid permanently skipping late-arriving events.
 LAG_BUFFER_SECONDS = 90
 
+# JumpCloud Directory Insights retains events for 90 days. A cursor older
+# than that points at data the API can no longer return.
+MAX_CURSOR_AGE_DAYS = 90
+
 
 def load_cursor(state_file: str) -> datetime | None:
     """Read the last poll end-time from the cursor file."""
@@ -55,6 +59,16 @@ def poll_once(
     now = datetime.now(timezone.utc)
     end = now - timedelta(seconds=LAG_BUFFER_SECONDS)
     start = load_cursor(state_file) or (now - timedelta(minutes=lookback_minutes))
+    retention_floor = now - timedelta(days=MAX_CURSOR_AGE_DAYS)
+    if start < retention_floor:
+        log.warning(
+            "Cursor %s is older than the %d-day Directory Insights retention "
+            "window — clamping start to %s; events beyond retention are unavailable",
+            start.isoformat(),
+            MAX_CURSOR_AGE_DAYS,
+            retention_floor.isoformat(),
+        )
+        start = retention_floor
     if end <= start:
         log.info("Window not yet past lag buffer (start=%s, end=%s) — skipping", start.isoformat(), end.isoformat())
         return [], start

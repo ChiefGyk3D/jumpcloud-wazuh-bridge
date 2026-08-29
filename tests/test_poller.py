@@ -1,9 +1,11 @@
 import json
+import logging
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
 
 from jumpcloud_wazuh_bridge.poller import (
     LAG_BUFFER_SECONDS,
+    MAX_CURSOR_AGE_DAYS,
     load_cursor,
     poll_once,
     save_cursor,
@@ -57,6 +59,42 @@ def test_poll_once_applies_lag_buffer(tmp_path):
     assert end_time <= after - timedelta(seconds=LAG_BUFFER_SECONDS)
     kwargs = client.fetch_events.call_args.kwargs
     assert kwargs["end_time"] == end_time
+
+
+def test_poll_once_clamps_stale_cursor_to_retention(tmp_path, caplog):
+    """A cursor older than the 90-day retention window is clamped forward."""
+    state_file = str(tmp_path / "cursor.json")
+    stale = datetime.now(timezone.utc) - timedelta(days=MAX_CURSOR_AGE_DAYS + 30)
+    save_cursor(state_file, stale)
+
+    client = MagicMock()
+    client.fetch_events.return_value = []
+
+    before = datetime.now(timezone.utc)
+    with caplog.at_level(logging.WARNING):
+        poll_once(client, state_file, lookback_minutes=15)
+    after = datetime.now(timezone.utc)
+
+    start = client.fetch_events.call_args.kwargs["start_time"]
+    assert before - timedelta(days=MAX_CURSOR_AGE_DAYS) <= start
+    assert start <= after - timedelta(days=MAX_CURSOR_AGE_DAYS)
+    assert any("retention" in r.getMessage() for r in caplog.records)
+
+
+def test_poll_once_recent_cursor_not_clamped(tmp_path, caplog):
+    state_file = str(tmp_path / "cursor.json")
+    cursor = datetime.now(timezone.utc) - timedelta(minutes=10)
+    save_cursor(state_file, cursor)
+
+    client = MagicMock()
+    client.fetch_events.return_value = []
+
+    with caplog.at_level(logging.WARNING):
+        poll_once(client, state_file, lookback_minutes=15)
+
+    start = client.fetch_events.call_args.kwargs["start_time"]
+    assert abs((start - cursor).total_seconds()) < 1
+    assert not any("retention" in r.getMessage() for r in caplog.records)
 
 
 def test_poll_once_skips_when_window_inside_lag_buffer(tmp_path):

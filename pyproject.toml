@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=77.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jumpcloud-wazuh-bridge"
+version = "1.0.0"
+description = "Python poller that ingests JumpCloud Directory Insights events and writes them as JSONL for Wazuh"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [{ name = "ChiefGyk3D" }]
+dependencies = [
+    "requests>=2.32.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/ChiefGyk3D/jumpcloud-wazuh-bridge"
+
+[project.scripts]
+jumpcloud-wazuh-bridge = "jumpcloud_wazuh_bridge.main:main"
+
+[tool.setuptools]
+packages = ["jumpcloud_wazuh_bridge"]

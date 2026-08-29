@@ -8,6 +8,33 @@ import requests as _requests
 
 log = logging.getLogger(__name__)
 
+# Service names accepted by the Directory Insights API (see README
+# "Event Services" table). Unknown names are not rejected — JumpCloud may
+# add services faster than we update this list — but they are warned about.
+KNOWN_SERVICES = frozenset(
+    {
+        "all",
+        "directory",
+        "sso",
+        "radius",
+        "ldap",
+        "systems",
+        "software",
+        "mdm",
+        "alerts",
+        "password_manager",
+        "access_management",
+        "asset_management",
+        "reports",
+        "saas_app_management",
+        "object_storage",
+        "notifications",
+    }
+)
+
+# Directory Insights caps page size at 10 000 rows.
+MAX_PAGE_LIMIT = 10_000
+
 
 def _doppler_secrets() -> dict[str, str]:
     """Load secrets from Doppler.
@@ -75,16 +102,56 @@ class Settings:
     page_limit: int
 
 
+def _int_setting(name: str, default: str, doppler: dict[str, str] | None) -> int:
+    """Parse an integer setting, re-raising parse failures with the variable name."""
+    raw = _get(name, default, doppler)
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        raise ValueError(f"{name} must be an integer, got {raw!r}") from None
+
+
 def load_settings() -> Settings:
     doppler = _doppler_secrets()
+
+    poll_seconds = _int_setting("JUMPCLOUD_POLL_SECONDS", "300", doppler)
+    if poll_seconds <= 0:
+        raise ValueError(
+            f"JUMPCLOUD_POLL_SECONDS must be greater than 0, got {poll_seconds}"
+        )
+
+    page_limit = _int_setting("JUMPCLOUD_PAGE_LIMIT", "1000", doppler)
+    if not 1 <= page_limit <= MAX_PAGE_LIMIT:
+        clamped = min(max(page_limit, 1), MAX_PAGE_LIMIT)
+        log.warning(
+            "JUMPCLOUD_PAGE_LIMIT=%d out of range 1..%d — clamping to %d",
+            page_limit,
+            MAX_PAGE_LIMIT,
+            clamped,
+        )
+        page_limit = clamped
+
+    services = [
+        s.strip()
+        for s in _get("JUMPCLOUD_SERVICES", "all", doppler).split(",")
+        if s.strip()
+    ]
+    unknown = [s for s in services if s not in KNOWN_SERVICES]
+    if unknown:
+        log.warning(
+            "Unknown JumpCloud service name(s) %s — known services: %s",
+            ", ".join(unknown),
+            ", ".join(sorted(KNOWN_SERVICES)),
+        )
+
     return Settings(
         api_key=_get("JUMPCLOUD_API_KEY", "", doppler),
         base_url=_get("JUMPCLOUD_BASE_URL", "https://api.jumpcloud.com", doppler),
         org_id=_get("JUMPCLOUD_ORG_ID", "", doppler),
-        lookback_minutes=int(_get("JUMPCLOUD_LOOKBACK_MINUTES", "15", doppler)),
-        poll_seconds=int(_get("JUMPCLOUD_POLL_SECONDS", "300", doppler)),
+        lookback_minutes=_int_setting("JUMPCLOUD_LOOKBACK_MINUTES", "15", doppler),
+        poll_seconds=poll_seconds,
         output_file=_get("JUMPCLOUD_OUTPUT_FILE", "/tmp/jumpcloud-events.jsonl", doppler),
         state_file=_get("JUMPCLOUD_STATE_FILE", "/tmp/jumpcloud-cursor.json", doppler),
-        services=[s.strip() for s in _get("JUMPCLOUD_SERVICES", "all", doppler).split(",") if s.strip()],
-        page_limit=int(_get("JUMPCLOUD_PAGE_LIMIT", "1000", doppler)),
+        services=services,
+        page_limit=page_limit,
     )

@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
+from requests.adapters import HTTPAdapter
+
 from jumpcloud_wazuh_bridge.client import JumpCloudClient
 
 START = datetime(2026, 3, 8, 12, 0, 0, tzinfo=timezone.utc)
@@ -17,6 +19,29 @@ def _response(events, headers):
 
 def _client():
     return JumpCloudClient(base_url="https://api.example.com", api_key="key")
+
+
+def test_retry_adapter_mounted():
+    """Both schemes get an HTTPAdapter with backoff-driven retries."""
+    client = _client()
+    for scheme in ("https://", "http://"):
+        adapter = client.session.get_adapter(f"{scheme}api.example.com/x")
+        assert isinstance(adapter, HTTPAdapter)
+        retry = adapter.max_retries
+        assert retry.total == 5
+        assert retry.backoff_factor == 2
+        assert set(retry.status_forcelist) == {429, 500, 502, 503, 504}
+        assert "POST" in retry.allowed_methods
+        assert retry.respect_retry_after_header is True
+
+
+def test_auth_headers_set():
+    client = JumpCloudClient(
+        base_url="https://api.example.com/", api_key="key", org_id="org-1"
+    )
+    assert client.base_url == "https://api.example.com"
+    assert client.session.headers["x-api-key"] == "key"
+    assert client.session.headers["x-org-id"] == "org-1"
 
 
 def test_fetch_events_paginates(monkeypatch):

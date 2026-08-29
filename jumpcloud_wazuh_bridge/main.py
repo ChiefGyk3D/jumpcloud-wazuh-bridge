@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import argparse
 import logging
-import time
+import signal
+import threading
 
 from .client import JumpCloudClient
 from .config import load_settings
@@ -14,6 +15,19 @@ logging.basicConfig(
     level=logging.INFO,
 )
 log = logging.getLogger(__name__)
+
+# Escalation thresholds for consecutive poll failures.
+WARN_AFTER_FAILURES = 3
+ERROR_AFTER_FAILURES = 5
+
+# Set by SIGTERM/SIGINT; checked between poll cycles and used as an
+# interruptible sleep so `docker stop` exits promptly and cleanly.
+_shutdown = threading.Event()
+
+
+def _handle_shutdown_signal(signum: int, frame: object) -> None:
+    log.info("Received signal %s — shutting down after current cycle", signal.Signals(signum).name)
+    _shutdown.set()
 
 
 def run_once() -> int:
@@ -39,6 +53,37 @@ def run_once() -> int:
     return written
 
 
+def run_loop(poll_seconds: int) -> None:
+    """Continuous polling loop with consecutive-failure escalation.
+
+    The cursor file's mtime only advances on success (save_cursor), so the
+    container healthcheck correctly flags a bridge that keeps failing —
+    deliberately, no heartbeat is written on failure.
+    """
+    consecutive_failures = 0
+    while not _shutdown.is_set():
+        try:
+            run_once()
+            consecutive_failures = 0
+        except Exception:
+            consecutive_failures += 1
+            log.exception("Poll error (consecutive failures: %d)", consecutive_failures)
+            if consecutive_failures >= ERROR_AFTER_FAILURES:
+                log.error(
+                    "%d consecutive poll failures — check the JumpCloud API key "
+                    "and network connectivity",
+                    consecutive_failures,
+                )
+            elif consecutive_failures >= WARN_AFTER_FAILURES:
+                log.warning(
+                    "%d consecutive poll failures — will keep retrying",
+                    consecutive_failures,
+                )
+        # Event.wait returns early (True) when a shutdown signal arrives.
+        _shutdown.wait(poll_seconds)
+    log.info("Shutdown complete")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="JumpCloud -> Wazuh JSONL bridge")
     parser.add_argument("--once", action="store_true", help="Run one poll cycle and exit")
@@ -48,6 +93,9 @@ def main() -> None:
         run_once()
         return
 
+    signal.signal(signal.SIGTERM, _handle_shutdown_signal)
+    signal.signal(signal.SIGINT, _handle_shutdown_signal)
+
     settings = load_settings()
     log.info(
         "Starting continuous polling (interval=%ds, services=%s, output=%s)",
@@ -55,12 +103,7 @@ def main() -> None:
         settings.services,
         settings.output_file,
     )
-    while True:
-        try:
-            run_once()
-        except Exception:
-            log.exception("Poll error")
-        time.sleep(settings.poll_seconds)
+    run_loop(settings.poll_seconds)
 
 
 if __name__ == "__main__":

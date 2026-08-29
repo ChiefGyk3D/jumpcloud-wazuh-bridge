@@ -10,7 +10,8 @@
 #      Set JUMPCLOUD_API_KEY directly.
 #
 #   3. .env file:
-#      Create a .env file next to this compose file.
+#      Copy .env.example to .env next to this compose file and uncomment
+#      the env_file line below. Keep .env out of version control.
 #
 # The JSONL output volume should be shared with the Wazuh manager container
 # so Wazuh can read the events via <localfile>.
@@ -20,6 +21,25 @@ services:
     build: .
     container_name: jumpcloud-bridge
     restart: unless-stopped
+    # --- Hardening ---
+    # The app writes only to /data (output JSONL + cursor), which stays a
+    # named volume; everything else is read-only. No tmpfs needed — nothing
+    # writes to /tmp when JUMPCLOUD_OUTPUT_FILE/STATE_FILE point at /data.
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 128m
+    pids_limit: 64
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # --- Secrets from a .env file (see .env.example) ---
+    # env_file:
+    #   - .env
     environment:
       # --- Option 1: Doppler service token (recommended) ---
       # DOPPLER_TOKEN: dp.st.xxxx

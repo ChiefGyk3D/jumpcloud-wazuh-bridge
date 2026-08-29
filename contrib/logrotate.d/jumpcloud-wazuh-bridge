@@ -1,0 +1,20 @@
+# Logrotate snippet for the bridge's JSONL output.
+#
+# Install: copy to /etc/logrotate.d/jumpcloud-wazuh-bridge and adjust the
+# path to match JUMPCLOUD_OUTPUT_FILE (as seen from the host — for the
+# default compose setup that is inside the jumpcloud-data Docker volume).
+#
+# copytruncate is required: the bridge keeps an append file descriptor open
+# and Wazuh tails the same file, so the file must be truncated in place
+# rather than moved — a rename would leave both processes pointed at the
+# rotated file.
+
+/data/jumpcloud-events.jsonl {
+    size 100M
+    rotate 5
+    copytruncate
+    compress
+    delaycompress
+    missingok
+    notifempty
+}
