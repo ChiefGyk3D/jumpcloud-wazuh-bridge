@@ -118,8 +118,11 @@ Add a `<localfile>` entry to the Wazuh manager config:
 </localfile>
 ```
 
-Wazuh decoders and rules for JumpCloud events are provided in the
-[siem-docker-stack](https://github.com/ChiefGyk3D/siem-docker-stack) repo under `wazuh/`.
+This repo ships a standalone decoder and ruleset (IDs 100300–100350) under
+`wazuh/decoders/` and `wazuh/rules/`. The
+[siem-docker-stack](https://github.com/ChiefGyk3D/siem-docker-stack) repo ships
+its own extended set (IDs 120600+). Install only ONE of the two on your Wazuh
+manager — loading both will produce duplicate alerts.
 
 ## Event Services
 
@@ -153,6 +156,9 @@ jumpcloud_wazuh_bridge/
   poller.py   — Polling loop and cursor management
   writer.py   — JSONL output with jumpcloud_bridge envelope
   main.py     — CLI entrypoint (--once or continuous)
+wazuh/
+  decoders/jumpcloud_decoder.xml — Wazuh decoder (jumpcloud_bridge)
+  rules/jumpcloud_rules.xml      — Standalone ruleset (IDs 100300–100350)
 dashboards/
   jumpcloud_security.json — Grafana dashboard (14 panels, datasource template var)
 scripts/

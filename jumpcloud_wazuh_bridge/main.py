@@ -58,8 +58,8 @@ def main() -> None:
     while True:
         try:
             run_once()
-        except Exception as exc:
-            log.error("Poll error: %s", exc)
+        except Exception:
+            log.exception("Poll error")
         time.sleep(settings.poll_seconds)
 
 

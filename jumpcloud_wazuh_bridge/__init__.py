@@ -1,6 +1,6 @@
 __all__ = [
-    "config",
     "client",
+    "config",
     "poller",
     "writer",
 ]

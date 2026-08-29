@@ -20,13 +20,15 @@ COPY jumpcloud_wazuh_bridge/ jumpcloud_wazuh_bridge/
 RUN mkdir -p /data && chown bridge:bridge /data
 VOLUME ["/data"]
 
+ENV PYTHONUNBUFFERED=1
 ENV JUMPCLOUD_OUTPUT_FILE=/data/jumpcloud-events.jsonl
 ENV JUMPCLOUD_STATE_FILE=/data/cursor.json
 
 # Drop to non-root
 USER bridge
 
+# Healthy when the cursor file has been updated within 3x the poll interval
 HEALTHCHECK --interval=60s --timeout=5s --start-period=10s --retries=3 \
-  CMD python3 -c "from pathlib import Path; import sys; p=Path('/data/cursor.json'); sys.exit(0 if p.exists() else 1)"
+  CMD python3 -c "import os, sys, time; v = os.environ.get('JUMPCLOUD_POLL_SECONDS', '300'); i = int(v) if v.isdigit() else 300; p = os.environ.get('JUMPCLOUD_STATE_FILE', '/data/cursor.json'); sys.exit(0 if os.path.exists(p) and time.time() - os.path.getmtime(p) < 3 * i else 1)"
 
 ENTRYPOINT ["python3", "-m", "jumpcloud_wazuh_bridge.main"]

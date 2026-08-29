@@ -1,8 +1,8 @@
-from dataclasses import dataclass
 import json
 import logging
 import os
 import subprocess
+from dataclasses import dataclass
 
 import requests as _requests
 
@@ -34,7 +34,7 @@ def _doppler_secrets() -> dict[str, str]:
                 log.info("Secrets loaded from Doppler API (service token)")
                 return resp.json()
             log.warning("Doppler API returned %d", resp.status_code)
-        except Exception as exc:
+        except _requests.RequestException as exc:
             log.warning("Doppler API call failed: %s", exc)
 
     # --- Method 2: Doppler CLI (dev workstations with `doppler login`) ---
@@ -44,6 +44,7 @@ def _doppler_secrets() -> dict[str, str]:
             capture_output=True,
             text=True,
             timeout=10,
+            check=False,
         )
         if result.returncode == 0:
             log.info("Secrets loaded from Doppler CLI")
@@ -84,6 +85,6 @@ def load_settings() -> Settings:
         poll_seconds=int(_get("JUMPCLOUD_POLL_SECONDS", "300", doppler)),
         output_file=_get("JUMPCLOUD_OUTPUT_FILE", "/tmp/jumpcloud-events.jsonl", doppler),
         state_file=_get("JUMPCLOUD_STATE_FILE", "/tmp/jumpcloud-cursor.json", doppler),
-        services=_get("JUMPCLOUD_SERVICES", "all", doppler).split(","),
+        services=[s.strip() for s in _get("JUMPCLOUD_SERVICES", "all", doppler).split(",") if s.strip()],
         page_limit=int(_get("JUMPCLOUD_PAGE_LIMIT", "1000", doppler)),
     )
