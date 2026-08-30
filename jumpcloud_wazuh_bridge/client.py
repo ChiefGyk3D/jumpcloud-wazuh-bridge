@@ -6,8 +6,12 @@ from datetime import datetime, timezone
 from typing import Any
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 log = logging.getLogger(__name__)
+
+MAX_PAGES = 1000
 
 # JumpCloud Directory Insights API docs:
 # https://docs.jumpcloud.com/api/insights/directory/1.0/index.html
@@ -33,6 +37,16 @@ class JumpCloudClient:
         if org_id:
             headers["x-org-id"] = org_id
         self.session.headers.update(headers)
+        retry = Retry(
+            total=5,
+            backoff_factor=2,
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=frozenset(["GET", "POST"]),
+            respect_retry_after_header=True,
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        self.session.mount("https://", adapter)
+        self.session.mount("http://", adapter)
 
     # ------------------------------------------------------------------
     def fetch_events(
@@ -54,6 +68,7 @@ class JumpCloudClient:
 
         all_events: list[dict[str, Any]] = []
         page = 0
+        last_search_after = ""
 
         while True:
             resp = self.session.post(url, json=payload, timeout=30)
@@ -67,9 +82,13 @@ class JumpCloudClient:
             all_events.extend(events)
             page += 1
 
+            if page >= MAX_PAGES:
+                log.warning("Reached max page count (%d) — stopping pagination", MAX_PAGES)
+                break
+
             # Pagination: compare X-Result-Count to X-Limit
-            result_count = int(resp.headers.get("X-Result-Count", 0))
-            limit = int(resp.headers.get("X-Limit", 0))
+            result_count = _int_header(resp.headers.get("X-Result-Count"), len(events))
+            limit = _int_header(resp.headers.get("X-Limit"), 0)
 
             if result_count < limit or result_count == 0:
                 break  # last page
@@ -77,6 +96,10 @@ class JumpCloudClient:
             search_after_raw = resp.headers.get("X-Search_after", "")
             if not search_after_raw:
                 break
+            if search_after_raw == last_search_after:
+                log.warning("X-Search_after cursor did not change — stopping pagination")
+                break
+            last_search_after = search_after_raw
 
             try:
                 payload["search_after"] = json.loads(search_after_raw)
@@ -91,6 +114,13 @@ class JumpCloudClient:
 
     # Backwards-compatible alias
     fetch_directory_insights = fetch_events
+
+
+def _int_header(value: str | None, default: int) -> int:
+    try:
+        return int(value) if value is not None else default
+    except ValueError:
+        return default
 
 
 def _rfc3339(dt: datetime) -> str:

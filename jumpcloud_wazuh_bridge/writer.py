@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+import os
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 
 def append_jsonl(output_file: str, events: Iterable[dict[str, Any]]) -> int:
@@ -17,7 +19,8 @@ def append_jsonl(output_file: str, events: Iterable[dict[str, Any]]) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
 
     count = 0
-    with path.open("a", encoding="utf-8") as f:
+    fd = os.open(str(path), os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+    with os.fdopen(fd, "a", encoding="utf-8") as f:
         for event in events:
             wrapped = {"jumpcloud_bridge": event}
             f.write(json.dumps(wrapped, ensure_ascii=True) + "\n")

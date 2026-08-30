@@ -4,7 +4,7 @@
 
   <!-- Base rule: any JumpCloud event -->
   <rule id="100300" level="3">
-    <decoded_as>json</decoded_as>
+    <decoded_as>jumpcloud_bridge</decoded_as>
     <field name="jumpcloud_bridge.service" type="pcre2">.+</field>
     <description>JumpCloud: $(jumpcloud_bridge.event_type) on $(jumpcloud_bridge.service)</description>
     <group>jumpcloud,</group>

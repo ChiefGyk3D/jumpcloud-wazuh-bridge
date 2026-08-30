@@ -17,6 +17,10 @@ Python poller that ingests [JumpCloud Directory Insights](https://docs.jumpcloud
 ## Quick Start
 
 ```bash
+# Install as a package (provides the `jumpcloud-wazuh-bridge` console script)
+pip install .
+
+# Or just the dependencies for in-place use:
 pip install -r requirements.txt
 
 # Option A: Doppler service token (recommended for production / SIEM server)
@@ -47,6 +51,11 @@ All settings resolve via: **Doppler → env var → default**.
 | `JUMPCLOUD_OUTPUT_FILE` | `/tmp/jumpcloud-events.jsonl` | JSONL output path (Wazuh reads this) |
 | `JUMPCLOUD_STATE_FILE` | `/tmp/jumpcloud-cursor.json` | Cursor persistence file |
 | `JUMPCLOUD_PAGE_LIMIT` | `1000` | Events per API page (max 10 000) |
+
+Settings are validated at startup: `JUMPCLOUD_POLL_SECONDS` must be a positive
+integer (the bridge refuses to start otherwise), `JUMPCLOUD_PAGE_LIMIT` is
+clamped to 1–10 000 with a warning, and unknown service names in
+`JUMPCLOUD_SERVICES` log a warning listing the known services.
 
 ## Doppler Integration
 
@@ -104,8 +113,16 @@ environment:
   # JUMPCLOUD_API_KEY: your-key      # Option 2: direct env var
 ```
 
+Alternatively, copy `.env.example` to `.env`, fill in your secrets, and
+uncomment the `env_file` block in `docker-compose.yml`.
+
 The JSONL output volume (`jumpcloud-data`) should be accessible to the Wazuh
 manager container so it can read events via `<localfile>`.
+
+To keep the JSONL output from growing without bound, install the logrotate
+snippet from `contrib/logrotate.d/jumpcloud-wazuh-bridge` (it uses
+`copytruncate` because the bridge holds an append descriptor and Wazuh tails
+the file).
 
 ## Wazuh Integration
 
@@ -118,8 +135,11 @@ Add a `<localfile>` entry to the Wazuh manager config:
 </localfile>
 ```
 
-Wazuh decoders and rules for JumpCloud events are provided in the
-[siem-docker-stack](https://github.com/ChiefGyk3D/siem-docker-stack) repo under `wazuh/`.
+This repo ships a standalone decoder and ruleset (IDs 100300–100350) under
+`wazuh/decoders/` and `wazuh/rules/`. The
+[siem-docker-stack](https://github.com/ChiefGyk3D/siem-docker-stack) repo ships
+its own extended set (IDs 120600+). Install only ONE of the two on your Wazuh
+manager — loading both will produce duplicate alerts.
 
 ## Event Services
 
@@ -153,6 +173,9 @@ jumpcloud_wazuh_bridge/
   poller.py   — Polling loop and cursor management
   writer.py   — JSONL output with jumpcloud_bridge envelope
   main.py     — CLI entrypoint (--once or continuous)
+wazuh/
+  decoders/jumpcloud_decoder.xml — Wazuh decoder (jumpcloud_bridge)
+  rules/jumpcloud_rules.xml      — Standalone ruleset (IDs 100300–100350)
 dashboards/
   jumpcloud_security.json — Grafana dashboard (14 panels, datasource template var)
 scripts/
@@ -193,4 +216,5 @@ A summary view of JumpCloud events is also included in the **SIEM+ Overview** da
 
 ## License
 
-MIT
+Licensed under the [Apache License, Version 2.0](LICENSE), suitable for both
+corporate and personal deployments. See the `NOTICE` file for attribution.

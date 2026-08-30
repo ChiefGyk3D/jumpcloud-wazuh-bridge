@@ -69,7 +69,6 @@ jobs:
     - name: Lint with Ruff
       run: |
         ruff check jumpcloud_wazuh_bridge/ tests/ --output-format=github
-      continue-on-error: true
 
     - name: Security check with Bandit
       run: |
@@ -78,7 +77,7 @@ jobs:
 
     - name: Check for known vulnerabilities
       run: |
-        safety check --json
+        safety scan --json
       continue-on-error: true
 
     - name: Upload Bandit report
