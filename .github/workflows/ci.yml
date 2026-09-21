@@ -40,6 +40,6 @@ jobs:
       lint-command: ruff check jumpcloud_wazuh_bridge/ tests/ --output-format=github
       dockerfile: Dockerfile
       docker-test-command: docker run --rm --entrypoint python3 "$IMAGE" -c "from jumpcloud_wazuh_bridge import config; print('Import OK')"
-      doppler-project: siem-pfsense
+      doppler-project: ci
       doppler-config: ci
       doppler-identity-id: ${{ vars.DOPPLER_IDENTITY_ID }}
