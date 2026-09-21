@@ -1,0 +1,20 @@
+# gitleaks configuration for the Security workflow (git-your-ship-together).
+#
+# Extends the default ruleset without disabling any rule. The first scan over
+# the full history (11 commits, 2026-09-21) found nothing. The allowlist names
+# only the documented placeholders in `.env.example` and `docker-compose.yml`,
+# so a real leak still fails the job. Every entry is anchored: a placeholder
+# must match whole, not merely contain the pattern.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documented placeholders"
+regexTarget = "secret"
+regexes = [
+  # `DOPPLER_TOKEN=dp.st.xxxx` in .env.example and docker-compose.yml
+  '''^dp\.st\.xxxx$''',
+  # `JUMPCLOUD_API_KEY=your-read-only-api-key`
+  '''^your-read-only-api-key$''',
+]

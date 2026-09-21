@@ -26,7 +26,9 @@ Plan for the JumpCloud → Wazuh bridge, established after the August 2026 cross
 ## Later / nice-to-have
 
 - [ ] SIEM Overview dashboard row + n8n JumpCloud triage workflow (tracked in siem-docker-stack roadmap Phase 1)
-- [ ] Make CI security scanners (Bandit, pip-audit) blocking once baselined
+- [x] pip-audit gates in CI (git-your-ship-together `security.yml`); Bandit is
+      replaced by ruff's `S` rules, advisory until the three findings in
+      `config.py` are settled (`lint-continue-on-error` in `ci.yml`)
 - [ ] `SECURITY.md` + release/versioning discipline for the published image
 
 **Maintainer:** [ChiefGyk3D](https://github.com/ChiefGyk3D)
