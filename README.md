@@ -20,7 +20,7 @@ Python poller that ingests [JumpCloud Directory Insights](https://docs.jumpcloud
 # Install as a package (provides the `jumpcloud-wazuh-bridge` console script)
 pip install .
 
-# Or just the dependencies for in-place use:
+# Or just the dependencies for in-place use (a hash-pinned lock; pip verifies every download):
 pip install -r requirements.txt
 
 # Option A: Doppler service token (recommended for production / SIEM server)
@@ -182,8 +182,22 @@ scripts/
   deploy-dashboard.py     — Deploy dashboard to Grafana via API
 Dockerfile                — Production container image (hardened, non-root)
 docker-compose.yml        — Ready-to-use compose service
+requirements.in           — Direct dependencies
+requirements.txt          — Generated lock: every dependency pinned with hashes
 tests/                    — Unit tests
 ```
+
+### Dependency lock
+
+`requirements.in` lists the direct dependencies. `requirements.txt` is
+generated from it and pins every dependency, transitive ones included, to a
+version and its SHA-256 hashes. pip enters hash-checking mode by itself when it
+reads the file, so `pip install -r requirements.txt` verifies every download,
+and CI and the Docker image install with `--require-hashes`: a package
+re-uploaded under the same version fails to install instead of shipping. To
+add or bump a dependency, edit `requirements.in` and regenerate the lock with
+the command in its header; never edit `requirements.txt` by hand. Dependabot
+regenerates it for version bumps.
 
 ## Grafana Dashboard
 
