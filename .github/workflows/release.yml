@@ -2,8 +2,9 @@
 # version tag, publish a multi-arch (amd64 + arm64) image to GHCR and Docker
 # Hub, signed with cosign, with a syft SBOM and build provenance attached.
 #
-# Docker Hub credentials come from Doppler (project jumpcloud-wazuh-bridge,
-# config ci), never from this repository's secrets. The jobs live in
+# Docker Hub credentials come from Doppler (project siem-pfsense, config
+# ci, shared with the rest of the SIEM stack), never from this repository's
+# secrets. The jobs live in
 # ChiefGyk3D/git-your-ship-together.
 #
 # Image: ghcr.io/chiefgyk3d/jumpcloud-wazuh-bridge
@@ -40,6 +41,6 @@ jobs:
       push: ${{ github.event_name != 'pull_request' }}
       dockerhub: true
       docker-test-command: docker run --rm --entrypoint python3 "$IMAGE" -c "from jumpcloud_wazuh_bridge import config; print('Import OK')"
-      doppler-project: jumpcloud-wazuh-bridge
+      doppler-project: siem-pfsense
       doppler-config: ci
       doppler-identity-id: ${{ vars.DOPPLER_IDENTITY_ID }}

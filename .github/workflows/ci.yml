@@ -43,6 +43,6 @@ jobs:
       lint-continue-on-error: true
       dockerfile: Dockerfile
       docker-test-command: docker run --rm --entrypoint python3 "$IMAGE" -c "from jumpcloud_wazuh_bridge import config; print('Import OK')"
-      doppler-project: jumpcloud-wazuh-bridge
+      doppler-project: siem-pfsense
       doppler-config: ci
       doppler-identity-id: ${{ vars.DOPPLER_IDENTITY_ID }}

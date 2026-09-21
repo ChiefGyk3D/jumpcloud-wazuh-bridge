@@ -28,6 +28,6 @@ jobs:
     with:
       codeql-queries: security-extended,security-and-quality
       pip-audit-requirements: requirements.txt
-      doppler-project: jumpcloud-wazuh-bridge
+      doppler-project: siem-pfsense
       doppler-config: ci
       doppler-identity-id: ${{ vars.DOPPLER_IDENTITY_ID }}
