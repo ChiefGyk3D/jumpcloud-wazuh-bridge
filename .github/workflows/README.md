@@ -17,8 +17,8 @@ Dockerfile path, the Doppler project.
 
 No secret is stored in this repository's GitHub secrets. A job authenticates
 to Doppler with a short-lived token minted from its own GitHub OIDC identity
-(a Doppler Service Account Identity) and reads the `ci` config of the
-`siem-pfsense` project, where this bridge's credentials live alongside the
+(a Doppler Service Account Identity) and reads the `ci` config of the shared
+`ci` Doppler project, where every repository's CI credentials live, apart from the
 rest of the SIEM stack's. That config is a root config of its own, so it
 holds only what the pipelines need and none of the stack's other secrets:
 
