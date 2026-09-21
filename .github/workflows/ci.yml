@@ -1,0 +1,48 @@
+# Lint, tests on Python 3.10-3.14 with coverage, Docker build. The jobs live in
+# ChiefGyk3D/git-your-ship-together; this file only says what is specific to
+# jumpcloud-wazuh-bridge.
+name: CI
+
+on:
+  push:
+    branches: [master, main, develop, copilot/**]
+  pull_request:
+    branches: [master, main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/python-ci.yml@d5d9556afeeb06f78419b91ecb5d146e789c6d51 # v1.0.0
+    permissions:
+      contents: read
+      id-token: write   # Doppler OIDC: CODECOV_TOKEN
+    secrets:
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}   # optional Service Token fallback; unset means OIDC only
+    with:
+      python-versions: '["3.10", "3.11", "3.12", "3.13", "3.14"]'
+      coverage-python-version: "3.14"
+      lint-python-version: "3.14"
+      install-command: |
+        python -m pip install --upgrade "pip>=25.3"
+        pip install -r requirements.txt
+        pip install pytest pytest-cov
+      # The package is imported from the checkout, not installed; PYTHONPATH
+      # stays inside the command because the workflow runs it through bash -c.
+      test-command: PYTHONPATH=. pytest tests/ -v --cov=jumpcloud_wazuh_bridge --cov-report=xml --cov-report=term
+      codecov: true
+      lint-command: ruff check jumpcloud_wazuh_bridge/ tests/ --output-format=github
+      # Lint was advisory before the migration and stays so until the tree is
+      # clean; then delete this line and let it gate.
+      lint-continue-on-error: true
+      dockerfile: Dockerfile
+      docker-test-command: docker run --rm --entrypoint python3 "$IMAGE" -c "from jumpcloud_wazuh_bridge import config; print('Import OK')"
+      doppler-project: siem-pfsense
+      doppler-config: ci
+      doppler-identity-id: ${{ vars.DOPPLER_IDENTITY_ID }}
