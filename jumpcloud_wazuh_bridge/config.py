@@ -67,7 +67,7 @@ def _doppler_secrets() -> dict[str, str]:
     # --- Method 2: Doppler CLI (dev workstations with `doppler login`) ---
     try:
         result = subprocess.run(
-            ["doppler", "secrets", "download", "--no-file", "--format", "json"],
+            ["doppler", "secrets", "download", "--no-file", "--format", "json"],  # noqa: S607  # CLI is on PATH wherever the developer installed it; FileNotFoundError is handled
             capture_output=True,
             text=True,
             timeout=10,
@@ -150,8 +150,8 @@ def load_settings() -> Settings:
         org_id=_get("JUMPCLOUD_ORG_ID", "", doppler),
         lookback_minutes=_int_setting("JUMPCLOUD_LOOKBACK_MINUTES", "15", doppler),
         poll_seconds=poll_seconds,
-        output_file=_get("JUMPCLOUD_OUTPUT_FILE", "/tmp/jumpcloud-events.jsonl", doppler),
-        state_file=_get("JUMPCLOUD_STATE_FILE", "/tmp/jumpcloud-cursor.json", doppler),
+        output_file=_get("JUMPCLOUD_OUTPUT_FILE", "/tmp/jumpcloud-events.jsonl", doppler),  # noqa: S108  # documented default, overridden to /data in Docker
+        state_file=_get("JUMPCLOUD_STATE_FILE", "/tmp/jumpcloud-cursor.json", doppler),  # noqa: S108  # documented default, overridden to /data in Docker
         services=services,
         page_limit=page_limit,
     )

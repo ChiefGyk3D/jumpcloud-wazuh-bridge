@@ -40,7 +40,6 @@ jobs:
       lint-command: ruff check jumpcloud_wazuh_bridge/ tests/ --output-format=github
       # Lint was advisory before the migration and stays so until the tree is
       # clean; then delete this line and let it gate.
-      lint-continue-on-error: true
       dockerfile: Dockerfile
       docker-test-command: docker run --rm --entrypoint python3 "$IMAGE" -c "from jumpcloud_wazuh_bridge import config; print('Import OK')"
       doppler-project: siem-pfsense
