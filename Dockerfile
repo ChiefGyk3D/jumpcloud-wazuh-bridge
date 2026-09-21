@@ -11,10 +11,17 @@ WORKDIR /app
 # Non-root user for security
 RUN groupadd -r bridge && useradd -r -g bridge -d /app -s /sbin/nologin bridge
 
-# Upgrade pip to fix CVE-2025-8869, install deps, remove build cache
+# Upgrade pip to fix CVE-2025-8869, install deps, then remove pip itself.
+# Nothing in the image calls pip at runtime, and pip vendors its own copies
+# of setuptools (70.3.0: CVE-2025-47273, CVE-2026-59890) and msgpack (1.1.2:
+# GHSA-6v7p-g79w-8964) under pip/_vendor that Trivy reports as image
+# findings. Current pip (26.2.1) still ships those versions, so upgrading
+# pip or installing a newer setuptools does not clear them; dropping pip
+# from the final layer does, and shrinks the runtime surface with it.
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade "pip>=25.3" && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    pip uninstall -y pip
 
 COPY jumpcloud_wazuh_bridge/ jumpcloud_wazuh_bridge/
 
