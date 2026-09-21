@@ -20,7 +20,7 @@ RUN groupadd -r bridge && useradd -r -g bridge -d /app -s /sbin/nologin bridge
 # from the final layer does, and shrinks the runtime surface with it.
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade "pip>=25.3" && \
-    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir --require-hashes -r requirements.txt && \
     pip uninstall -y pip
 
 COPY jumpcloud_wazuh_bridge/ jumpcloud_wazuh_bridge/
