@@ -8,8 +8,10 @@ ARG BUILDPLATFORM
 
 WORKDIR /app
 
-# Non-root user for security
-RUN groupadd -r bridge && useradd -r -g bridge -d /app -s /sbin/nologin bridge
+# Dedicated non-root user with a fixed UID/GID of 999, the owner of the
+# existing jumpcloud-data volume, so that volume keeps working with no chown.
+RUN groupadd --system --gid 999 bridge \
+    && useradd --system --uid 999 --gid 999 --home-dir /app --shell /sbin/nologin bridge
 
 # Upgrade pip to fix CVE-2025-8869, install deps, then remove pip itself.
 # Nothing in the image calls pip at runtime, and pip vendors its own copies
@@ -34,10 +36,10 @@ ENV JUMPCLOUD_OUTPUT_FILE=/data/jumpcloud-events.jsonl
 ENV JUMPCLOUD_STATE_FILE=/data/cursor.json
 
 # Drop to non-root
-USER bridge
+USER 999:999
 
 # Healthy when the cursor file has been updated within 3x the poll interval
 HEALTHCHECK --interval=60s --timeout=5s --start-period=10s --retries=3 \
-  CMD python3 -c "import os, sys, time; v = os.environ.get('JUMPCLOUD_POLL_SECONDS', '300'); i = int(v) if v.isdigit() else 300; p = os.environ.get('JUMPCLOUD_STATE_FILE', '/data/cursor.json'); sys.exit(0 if os.path.exists(p) and time.time() - os.path.getmtime(p) < 3 * i else 1)"
+  CMD ["python3", "-c", "import os, sys, time; v = os.environ.get('JUMPCLOUD_POLL_SECONDS', '300'); i = int(v) if v.isdigit() else 300; p = os.environ.get('JUMPCLOUD_STATE_FILE', '/data/cursor.json'); sys.exit(0 if os.path.exists(p) and time.time() - os.path.getmtime(p) < 3 * i else 1)"]
 
 ENTRYPOINT ["python3", "-m", "jumpcloud_wazuh_bridge.main"]
