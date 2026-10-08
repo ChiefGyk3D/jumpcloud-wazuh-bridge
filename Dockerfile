@@ -8,6 +8,12 @@ ARG BUILDPLATFORM
 
 WORKDIR /app
 
+# Apply pending Debian security updates (the base image lags them, and the
+# image scan fails on any fixed HIGH finding such as libpcre2).
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && rm -rf /var/lib/apt/lists/*
+
 # Dedicated non-root user with a fixed UID/GID of 999, the owner of the
 # existing jumpcloud-data volume, so that volume keeps working with no chown.
 RUN groupadd --system --gid 999 bridge \
